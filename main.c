@@ -58,6 +58,7 @@ bool chunk_merge(segment *dst, void *start, size_t size) {
         // new -> item
         item->start = start;
         item->size += size;
+        result = true;
       }
     }
   }
