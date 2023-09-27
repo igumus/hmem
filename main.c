@@ -225,6 +225,28 @@ void simulate_free_space_compaction_by_next() {
   printf("### %s: Final State\n\n", __func__);
 }
 
+void simulate_free_space_compaction_by_gap() {
+  TODO("Add Description");
+  printf("### %s: Initial State\n", __func__);
+
+  char *ptrs[10] = {0};
+  for (size_t i = 0; i < 10; ++i) {
+    ptrs[i] = heap_alloc(i);
+  }
+  heap_dump();
+
+  for (size_t i = 0; i < 10; ++i) {
+    if (ptrs[i] != NULL && (i & 1) == 0) {
+      heap_free(ptrs[i]);
+    }
+  }
+  heap_dump();
+
+  heap_free(ptrs[3]);
+  heap_dump();
+
+  printf("### %s: Final State\n\n", __func__);
+}
 int main(void) {
   // simulate_alphabet_allocation();
   // simulate_invalid_allocation();
@@ -232,7 +254,8 @@ int main(void) {
   // simulate_memory_gap();
   // simulate_free_space_reusing();
   // simulate_free_space_compaction_by_prev();
-  simulate_free_space_compaction_by_next();
+  // simulate_free_space_compaction_by_next();
+  simulate_free_space_compaction_by_gap();
 
   return 0;
 }
