@@ -210,7 +210,8 @@ void simulate_free_space_reusing() {
   printf("### %s: Final State\n\n", __func__);
 }
 
-void simulate_free_space_compaction() {
+void simulate_free_space_compaction_by_prev() {
+  TODO("Add Description item->new");
   printf("### %s: Initial State\n", __func__);
   heap_dump();
   void *p0 = heap_alloc(10);
@@ -224,13 +225,29 @@ void simulate_free_space_compaction() {
   printf("### %s: Final State\n\n", __func__);
 }
 
+void simulate_free_space_compaction_by_next() {
+  TODO("Add Description new->item");
+  printf("### %s: Initial State\n", __func__);
+  heap_dump();
+  void *p0 = heap_alloc(10);
+  heap_dump();
+  void *p1 = heap_alloc(10);
+  heap_dump();
+  heap_free(p1);
+  heap_dump();
+  heap_free(p0);
+  heap_dump();
+  printf("### %s: Final State\n\n", __func__);
+}
+
 int main(void) {
   // simulate_alphabet_allocation();
   // simulate_invalid_allocation();
   // simulate_continuous_allocation();
   // simulate_memory_gap();
   // simulate_free_space_reusing();
-  simulate_free_space_compaction();
+  // simulate_free_space_compaction_by_prev();
+  simulate_free_space_compaction_by_next();
 
   return 0;
 }
