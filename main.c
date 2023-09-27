@@ -70,11 +70,11 @@ void chunk_create(segment *dst, void *start, size_t size) {
   }
 }
 
-int chunk_find(const segment *src, void *ptr) {
+int chunk_find_by_start(const segment *src, void *start) {
   chunk chunk;
   for (size_t i = 0; i < src->count; ++i) {
     chunk = src->chunks[i];
-    if (chunk.start == ptr) {
+    if (chunk.start == start) {
       return i;
     }
   }
@@ -138,7 +138,7 @@ void *heap_alloc(size_t size) {
 
 void heap_free(void *ptr) {
   if (ptr != NULL) {
-    const int index = chunk_find(&alloced, ptr);
+    const int index = chunk_find_by_start(&alloced, ptr);
     assert(index >= 0);
     chunk item = alloced.chunks[index];
     chunk_create(&freed, item.start, item.size);
