@@ -3,13 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define NOTIMPLEMENTED                                                         \
-  do {                                                                         \
-    fprintf(stderr, "%s:%d ERROR: not implemented: %s\n", __FILE__, __LINE__,  \
-            __func__);                                                         \
-  } while (0);
-
-#define TODO(task) printf("%s:%s TODO: %s\n", __FILE__, __func__, (task))
+#include "./common.h"
 
 #define CAPACITY_HEAP_AREA 640000
 #define CAPACITY_HEAP_SEGMENT 1024
