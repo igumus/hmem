@@ -43,32 +43,23 @@ void chunk_insert(segment *dst, void *start, size_t size) {
   dst->count += 1;
 }
 
-bool chunk_merge(segment *dst, void *start, size_t size) {
-  bool result = false;
-  if (dst->count > 0) {
-    for (size_t i = 0; i < dst->count; ++i) {
-      chunk *item = &dst->chunks[i];
-      if ((item->start + item->size) == start) {
-        // checking newly freed chunk is next of item
-        // item -> new
-        item->size += size;
-        result = true;
-      } else if (item->start == (start + size)) {
-        // checking newly freed chunk is prev of item
-        // new -> item
-        item->start = start;
-        item->size += size;
-        result = true;
-      }
+void chunk_merge(segment *dst, void *start, size_t size) {
+  for (size_t i = 0; i < dst->count; ++i) {
+    chunk *item = &dst->chunks[i];
+    if ((item->start + item->size) == start) {
+      // checking newly freed chunk is next of item
+      // item -> new
+      item->size += size;
+      return;
+    } else if (item->start == (start + size)) {
+      // checking newly freed chunk is prev of item
+      // new -> item
+      item->start = start;
+      item->size += size;
+      return;
     }
   }
-  return result;
-}
-
-void chunk_create(segment *dst, void *start, size_t size) {
-  if (!chunk_merge(dst, start, size)) {
-    chunk_insert(dst, start, size);
-  }
+  chunk_insert(dst, start, size);
 }
 
 int chunk_find_by_start(const segment *src, void *start) {
@@ -142,7 +133,7 @@ void heap_free(void *ptr) {
     const int index = chunk_find_by_start(&alloced, ptr);
     assert(index >= 0);
     chunk item = alloced.chunks[index];
-    chunk_create(&freed, item.start, item.size);
+    chunk_merge(&freed, item.start, item.size);
     chunk_delete(&alloced, index);
   }
 }
