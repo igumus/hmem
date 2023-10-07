@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "./common.h"
 
@@ -14,8 +15,14 @@ typedef struct {
 } chunk;
 
 typedef struct {
+  void *prev;
+  void *next;
+  chunk item;
+} segment_node;
+
+typedef struct {
   size_t count;
-  chunk chunks[CAPACITY_HEAP_SEGMENT];
+  segment_node *head;
 } segment;
 
 typedef struct {
@@ -33,67 +40,117 @@ void chunk_insert(segment *dst, void *start, size_t size) {
       .start = start,
       .size = size,
   };
-  dst->chunks[dst->count] = item;
   dst->count += 1;
+
+  if (dst->head == NULL) {
+    dst->head = malloc(sizeof(segment_node));
+    dst->head->item = item;
+  } else {
+    segment_node *node = malloc(sizeof(segment_node));
+    node->item = item;
+    node->next = dst->head;
+    dst->head->prev = node;
+    dst->head = node;
+  }
+}
+
+segment_node *chunk_find_by_start(const segment *src, void *start) {
+  if (src->head == NULL) {
+    return NULL;
+  }
+  segment_node *current = src->head;
+  while (current != NULL) {
+    if (current->item.start == start) {
+      return current;
+    }
+    current = current->next;
+  }
+  return NULL;
+}
+
+segment_node *chunk_find_by_size(const segment *src, size_t size) {
+  if (src->head == NULL) {
+    return NULL;
+  }
+  segment_node *current = src->head;
+  while (current != NULL) {
+    if (current->item.size == size) {
+      return current;
+    }
+    current = current->next;
+  }
+  return NULL;
+}
+
+void chunk_delete(segment *src, segment_node *node) {
+  if (src->head == NULL || node == NULL) {
+    return;
+  }
+
+  src->count -= 1;
+  if (src->head == node) {
+    src->head = node->next;
+  } else {
+    segment_node *nprev = node->prev;
+    nprev->next = node->next;
+    if (node->next != NULL) {
+      segment_node *nnext = node->next;
+      nnext->prev = nprev;
+    } else {
+      nprev->next = NULL;
+    }
+  }
+  free(node);
 }
 
 void chunk_merge(segment *dst, void *start, size_t size) {
-  for (size_t i = 0; i < dst->count; ++i) {
-    chunk *item = &dst->chunks[i];
+  bool found = false;
+  segment_node *current = dst->head;
+  chunk *item = NULL;
+  while (current != NULL) {
+    item = &current->item;
     if ((item->start + item->size) == start) {
       // checking newly freed chunk is next of item
       // item -> new
       item->size += size;
-      return;
+      start = item->start;
+      size = item->size;
+
+      if (!found) {
+        found = true;
+      } else {
+        chunk_delete(dst, current->prev);
+      }
     } else if (item->start == (start + size)) {
       // checking newly freed chunk is prev of item
       // new -> item
       item->start = start;
       item->size += size;
-      return;
-    }
-  }
-  chunk_insert(dst, start, size);
-}
+      start = item->start;
+      size = item->size;
 
-int chunk_find_by_start(const segment *src, void *start) {
-  chunk chunk;
-  for (size_t i = 0; i < src->count; ++i) {
-    chunk = src->chunks[i];
-    if (chunk.start == start) {
-      return i;
+      if (!found) {
+        found = true;
+      } else {
+        chunk_delete(dst, current->prev);
+      }
     }
+    current = current->next;
   }
-  return -1;
-}
-
-int chunk_find_by_size(const segment *src, size_t size) {
-  chunk chunk;
-  for (size_t i = 0; i < src->count; ++i) {
-    chunk = src->chunks[i];
-    if (chunk.size == size) {
-      return i;
-    }
+  if (!found) {
+    chunk_insert(dst, start, size);
   }
-  return -1;
-}
-
-void chunk_delete(segment *src, size_t index) {
-  assert(index >= 0);
-  assert(index < src->count);
-  for (size_t i = index; i < src->count - 1; ++i) {
-    src->chunks[i] = src->chunks[i + 1];
-  }
-  src->count -= 1;
 }
 
 void segment_dump(const segment *src, const char *name) {
   printf("%s \t#%zu\n", name, src->count);
   if (src->count > 0) {
     chunk chunk;
-    for (size_t i = 0; i < src->count; ++i) {
-      chunk = src->chunks[i];
+    segment_node *node = src->head;
+    while (node != NULL) {
+      chunk = node->item;
       printf("   - start: %p, size: %zu\n", chunk.start, chunk.size);
+      node = node->next;
     }
   } else {
     printf("   - no chunk freed\n");
@@ -105,9 +162,9 @@ void *heap_alloc(size_t size) {
     return NULL;
 
   // try to used already freed memory
-  int index = chunk_find_by_size(&freed, size);
-  if (index >= 0) {
-    chunk item = freed.chunks[index];
+  segment_node *index = chunk_find_by_size(&freed, size);
+  if (index != NULL) {
+    chunk item = index->item;
     chunk_delete(&freed, index);
     chunk_insert(&alloced, item.start, item.size);
     return item.start;
@@ -124,9 +181,9 @@ void *heap_alloc(size_t size) {
 
 void heap_free(void *ptr) {
   if (ptr != NULL) {
-    const int index = chunk_find_by_start(&alloced, ptr);
-    assert(index >= 0);
-    chunk item = alloced.chunks[index];
+    segment_node *index = chunk_find_by_start(&alloced, ptr);
+    assert(index != NULL);
+    chunk item = index->item;
     chunk_merge(&freed, item.start, item.size);
     chunk_delete(&alloced, index);
   }
@@ -247,6 +304,7 @@ void simulate_free_space_compaction_by_gap() {
 
   printf("### %s: Final State\n\n", __func__);
 }
+
 int main(void) {
   // simulate_alphabet_allocation();
   // simulate_invalid_allocation();
