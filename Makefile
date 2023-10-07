@@ -1,22 +1,25 @@
 CC=gcc
-CFLAGS=-Wall -Wextra 
+CFLAGS=-Wall -Wextra -g
 PROJECT_BINARY=main
 PROJECT_BINARY_OUTPUT=bin
 
 .PHONY: all
 
-all: run
+all: main
 
 ## Build:
 clean: ## Cleans output folder
 	@rm -rf ${PROJECT_BINARY_OUTPUT}
 
-main: clean ## Builds project
+main: clean ## Builds main
 	@mkdir -p ${PROJECT_BINARY_OUTPUT}
 	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY} main.c
-
-run: main ## Runs project
 	@./${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY}
+
+sketch: clean ## Builds sketch
+	@mkdir -p ${PROJECT_BINARY_OUTPUT}
+	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/sketch sketch.c
+	@./${PROJECT_BINARY_OUTPUT}/sketch
 
 ## Help:
 help: ## Show this help.
