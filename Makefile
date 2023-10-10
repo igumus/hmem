@@ -16,6 +16,11 @@ main: clean ## Builds main
 	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY} -DDEBUG=0 main.c heap.c
 	@./${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY}
 
+sim: clean ## Builds simulations
+	@mkdir -p ${PROJECT_BINARY_OUTPUT}
+	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY} -DDEBUG=0 sim.c heap.c
+	@./${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY}
+
 sketch: clean ## Builds sketch
 	@mkdir -p ${PROJECT_BINARY_OUTPUT}
 	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/sketch sketch.c
