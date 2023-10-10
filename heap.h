@@ -1,6 +1,7 @@
 #ifndef HEAP_H_
 #define HEAP_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #define CAPACITY_HEAP_AREA 640000
@@ -39,6 +40,8 @@ typedef struct {
 // void segment_dump(const segment *src, const char *name);
 
 void check_pointer(void *, size_t);
+
+bool check_pointer_freed(void *);
 
 void *heap_alloc(size_t size);
 
