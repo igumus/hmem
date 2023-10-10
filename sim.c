@@ -18,6 +18,7 @@ void simulate_zero_allocation() {
 #if DEBUG
   heap_dump();
 #endif
+  heap_free(ptr);
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -40,6 +41,8 @@ void simulate_alphabet_allocation() {
 #if DEBUG
   heap_dump();
 #endif
+  heap_free(alphabet);
+  alphabet = NULL;
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -48,14 +51,18 @@ void simulate_continuous_allocation() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
-  void *ptr = NULL;
+  char *ptrs[10] = {0};
   for (size_t i = 0; i < 10; ++i) {
-    ptr = heap_alloc(i);
-    check_pointer(ptr, i);
+    ptrs[i] = heap_alloc(i);
+    check_pointer(ptrs[i], i);
   }
 #if DEBUG
   heap_dump();
 #endif
+  for (size_t i = 0; i < 10; ++i) {
+    heap_free(ptrs[i]);
+    ptrs[i] = NULL;
+  }
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -64,45 +71,22 @@ void simulate_memory_gap() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
-  void *ptr = NULL;
+  char *ptrs[10] = {0};
   for (size_t i = 0; i < 10; ++i) {
-    ptr = heap_alloc(i);
-    check_pointer(ptr, i);
-    if (ptr != NULL && (i & 1) == 0) {
-      heap_free(ptr);
+    ptrs[i] = heap_alloc(i);
+    check_pointer(ptrs[i], i);
+    if (ptrs[i] != NULL && (i & 1) == 0) {
+      heap_free(ptrs[i]);
+      ptrs[i] = NULL;
     }
   }
 #if DEBUG
   heap_dump();
 #endif
-  printf("### Finished: %s\n\n", __func__);
-}
-
-void simulate_free_space_reusing() {
-#if DEBUG
-  printf("### Starting: %s\n", __func__);
-  heap_dump();
-#endif
-  size_t size = 10;
-  void *str = heap_alloc(size);
-  check_pointer(str, size);
-#if DEBUG
-  heap_dump();
-#endif
-  heap_free(str);
-#if DEBUG
-  heap_dump();
-#endif
-  void *other = heap_alloc(size);
-  check_pointer(other, size);
-  assert(str == other);
-#if DEBUG
-  heap_dump();
-#endif
-  heap_free(str);
-#if DEBUG
-  heap_dump();
-#endif
+  for (size_t i = 0; i < 10; ++i) {
+    heap_free(ptrs[i]);
+    ptrs[i] = NULL;
+  }
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -130,6 +114,8 @@ void simulate_free_space_compaction_by_prev() {
 #if DEBUG
   heap_dump();
 #endif
+  p0 = NULL;
+  p1 = NULL;
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -157,10 +143,12 @@ void simulate_free_space_compaction_by_next() {
 #if DEBUG
   heap_dump();
 #endif
+  p0 = NULL;
+  p1 = NULL;
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_free_space_compaction_by_gap() {
+void simulate_free_space_compaction() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -174,20 +162,27 @@ void simulate_free_space_compaction_by_gap() {
 #if DEBUG
   heap_dump();
 #endif
-
   for (size_t i = 0; i < 10; ++i) {
     if (ptrs[i] != NULL && (i & 1) == 0) {
       heap_free(ptrs[i]);
+      assert(true == check_pointer_freed(ptrs[i]));
+      ptrs[i] = NULL;
     }
   }
 #if DEBUG
   heap_dump();
 #endif
   heap_free(ptrs[3]);
+  // because ptrs[3] merge with ptrs[2] and ptrs[4]
+  assert(false == check_pointer_freed(ptrs[3]));
+  ptrs[3] = NULL;
 #if DEBUG
   heap_dump();
 #endif
-
+  for (size_t i = 0; i < 10; ++i) {
+    heap_free(ptrs[i]);
+    ptrs[i] = NULL;
+  }
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -196,10 +191,8 @@ int main(void) {
   simulate_alphabet_allocation();
   simulate_continuous_allocation();
   simulate_memory_gap();
-  simulate_free_space_reusing();
   simulate_free_space_compaction_by_prev();
   simulate_free_space_compaction_by_next();
-  simulate_free_space_compaction_by_gap();
-
+  simulate_free_space_compaction();
   return 0;
 }
