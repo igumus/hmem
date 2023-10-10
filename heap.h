@@ -38,6 +38,8 @@ typedef struct {
 //
 // void segment_dump(const segment *src, const char *name);
 
+void check_pointer(void *, size_t);
+
 void *heap_alloc(size_t size);
 
 void heap_dump();

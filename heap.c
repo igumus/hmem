@@ -135,13 +135,31 @@ void segment_dump(const segment *src, const char *name) {
   }
 }
 
+void check_pointer(void *ptr, size_t size) {
+  if (size == 0) {
+    assert(ptr == NULL);
+  } else {
+    assert(ptr != NULL);
+    chunk *meta = (chunk *)(ptr - sizeof(size_t));
+    assert(meta->size == size);
+  }
+}
+
 void *heap_alloc(size_t size) {
   if (size == 0)
     return NULL;
 
   chunk *item = NULL;
-  assert((heap.size + size) <= CAPACITY_HEAP_AREA);
 
+  segment_node *node = chunk_find_by_size(&freed, size);
+  if (node != NULL) {
+    item = node->item;
+    chunk_delete(&freed, node);
+    chunk_insert(&alloced, item);
+    return ((char *)item) + sizeof(chunk);
+  }
+
+  assert((heap.size + size) <= CAPACITY_HEAP_AREA);
   char *head = heap.area + heap.size;
   item = (chunk *)head;
   item->size = size;

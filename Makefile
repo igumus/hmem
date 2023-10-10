@@ -13,7 +13,7 @@ clean: ## Cleans output folder
 
 main: clean ## Builds main
 	@mkdir -p ${PROJECT_BINARY_OUTPUT}
-	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY} main.c heap.c
+	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY} -DDEBUG=0 main.c heap.c
 	@./${PROJECT_BINARY_OUTPUT}/${PROJECT_BINARY}
 
 sketch: clean ## Builds sketch
