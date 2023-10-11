@@ -45,7 +45,7 @@ segment_node *chunk_find_by_size(const segment *src, size_t size) {
   chunk *item = NULL;
   while (current != NULL) {
     item = (chunk *)current->item;
-    if (item->size == size) {
+    if (item->size >= size) {
       return current;
     }
     current = current->next;
@@ -121,13 +121,12 @@ void chunk_merge(segment *dst, void *start, size_t size) {
 void segment_dump(const segment *src, const char *name) {
   printf("%s \t#%zu\n", name, src->count);
   if (src->count > 0) {
-    chunk *item;
     segment_node *node = src->head;
     while (node != NULL) {
-      item = (chunk *)node->item;
-      printf("   - meta: %p, start: %p, end: %p, size: %zu\n", node->item,
-             (void *)node->item + sizeof(chunk),
-             (void *)node->item + sizeof(chunk) + item->size, item->size);
+      char *item = (char *)node->item;
+      printf("   - meta: %p, start: %p, end: %p, size: %zu\n", item,
+             item + sizeof(chunk), item + sizeof(chunk) + node->item->size,
+             node->item->size);
       node = node->next;
     }
   } else {
@@ -141,7 +140,7 @@ void check_pointer(void *ptr, size_t size) {
   } else {
     assert(ptr != NULL);
     chunk *meta = (chunk *)(ptr - sizeof(size_t));
-    assert(meta->size == size);
+    assert(meta->size >= size);
   }
 }
 
@@ -161,26 +160,37 @@ void *heap_alloc(size_t size) {
   if (size == 0)
     return NULL;
 
-  chunk *item = NULL;
+  size_t csize = size + sizeof(chunk);
 
-  segment_node *node = chunk_find_by_size(&freed, size);
+  chunk *item = NULL;
+  segment_node *node = chunk_find_by_size(&freed, csize);
   if (node != NULL) {
     item = node->item;
-    chunk_delete(&freed, node);
+    size_t remain = item->size - csize;
+    char *ret = ((char *)item) + sizeof(chunk);
+    item->size = size;
     chunk_insert(&alloced, item);
-    return ((char *)item) + sizeof(chunk);
+    if (remain > 0) {
+      char *end = ret + item->size;
+      node->item = (chunk *)end;
+      node->item->size = remain;
+    } else {
+      chunk_delete(&freed, node);
+    }
+    return ret;
+  } else {
+    assert((heap.size + csize) <= CAPACITY_HEAP_AREA);
+    char *head = heap.area + heap.size;
+    item = (chunk *)head;
+    item->size = size;
+    void *start = head + sizeof(chunk);
+    heap.size += csize;
+
+    chunk_insert(&alloced, item);
+
+    return start;
   }
-
-  assert((heap.size + size) <= CAPACITY_HEAP_AREA);
-  char *head = heap.area + heap.size;
-  item = (chunk *)head;
-  item->size = size;
-  void *start = head + sizeof(chunk);
-  heap.size += sizeof(chunk) + size;
-
-  chunk_insert(&alloced, item);
-
-  return start;
+  return NULL;
 }
 
 void heap_free(void *ptr) {
