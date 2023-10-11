@@ -153,6 +153,10 @@ bool check_pointer_freed(void *ptr) {
   assert(0 && "unreachable");
 }
 
+size_t freed_object_count() { return freed.count; }
+
+size_t allocated_object_count() { return alloced.count; }
+
 void *heap_alloc(size_t size) {
   if (size == 0)
     return NULL;
