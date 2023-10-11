@@ -1,6 +1,7 @@
 #ifndef HEAP_H_
 #define HEAP_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #define CAPACITY_HEAP_AREA 640000
@@ -26,19 +27,13 @@ typedef struct {
   char area[CAPACITY_HEAP_AREA];
 } memory;
 
-// void chunk_insert(segment *dst, void *start);
-//
-// segment_node *chunk_find_by_start(const segment *src, void *start);
-//
-// segment_node *chunk_find_by_size(const segment *src, size_t size);
-//
-// void chunk_delete(segment *src, segment_node *node);
-//
-// void chunk_merge(segment *dst, void *start, size_t size);
-//
-// void segment_dump(const segment *src, const char *name);
-
 void check_pointer(void *, size_t);
+
+bool check_pointer_freed(void *);
+
+size_t freed_object_count();
+
+size_t allocated_object_count();
 
 void *heap_alloc(size_t size);
 

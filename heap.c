@@ -145,6 +145,18 @@ void check_pointer(void *ptr, size_t size) {
   }
 }
 
+bool check_pointer_freed(void *ptr) {
+  if (ptr != NULL) {
+    chunk *meta = (chunk *)(ptr - sizeof(size_t));
+    return chunk_find_by_start(&freed, meta) != NULL;
+  }
+  assert(0 && "unreachable");
+}
+
+size_t freed_object_count() { return freed.count; }
+
+size_t allocated_object_count() { return alloced.count; }
+
 void *heap_alloc(size_t size) {
   if (size == 0)
     return NULL;
