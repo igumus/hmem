@@ -92,6 +92,8 @@ void chunk_merge(segment *dst, void *start, size_t size) {
 
       if (!found) {
         found = true;
+        start = current->item;
+        size = item->size;
       } else {
         chunk_delete(dst, current->prev);
       }
