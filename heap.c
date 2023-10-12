@@ -8,6 +8,14 @@ memory heap = {0};
 segment freed = {0};
 segment alloced = {0};
 
+void *chunk_end_addr(chunk *ptr) {
+  return ((char *)ptr) + sizeof(chunk) + ptr->size;
+}
+
+void *chunk_user_addr(chunk *ptr) { return ((char *)ptr) + sizeof(chunk); }
+
+chunk *pointer_to_chunk(void *ptr) { return (chunk *)(ptr - sizeof(chunk)); }
+
 void chunk_insert(segment *dst, void *start) {
   assert(dst->count <= CAPACITY_HEAP_SEGMENT);
   dst->count += 1;
@@ -74,41 +82,36 @@ void chunk_delete(segment *src, segment_node *node) {
   free(node);
 }
 
-void chunk_merge(segment *dst, void *start, size_t size) {
+void chunk_merge(segment *dst, void *candidate_start_addr,
+                 size_t candidate_size) {
   bool found = false;
   segment_node *current = dst->head;
-  chunk *item = NULL;
-  void *current_addr;
-  void *new_addr;
+  void *item_end_addr;
+  void *candidate_end_addr;
   while (current != NULL) {
-    item = (chunk *)current->item;
-    current_addr = (void *)current->item + sizeof(chunk) + item->size;
-    new_addr = (void *)start + sizeof(chunk) + size;
+    item_end_addr = chunk_end_addr(current->item);
+    candidate_end_addr = candidate_start_addr + sizeof(chunk) + candidate_size;
 
-    if (current_addr == start) {
-      // checking newly freed chunk is next of item
-      // item -> new
-      item->size += size + sizeof(chunk);
+    if (item_end_addr == candidate_start_addr) {
+      current->item->size += candidate_size + sizeof(chunk);
 
       if (!found) {
         found = true;
-        start = current->item;
-        size = item->size;
+        candidate_start_addr = current->item;
+        candidate_size = current->item->size;
       } else {
         chunk_delete(dst, current->prev);
       }
-    } else if (current->item == new_addr) {
-      size_t new_size = size + item->size + sizeof(chunk);
-      current->item = start;
-      item = (chunk *)current->item;
-      item->size = new_size;
+    } else if (candidate_end_addr == current->item) {
+      size_t new_size = candidate_size + current->item->size + sizeof(chunk);
+      current->item = candidate_start_addr;
+      current->item->size = new_size;
 
       if (!found) {
         found = true;
-        start = current->item;
-        size = item->size;
+        candidate_start_addr = current->item;
+        candidate_size = current->item->size;
       } else {
-        // check this branch is usable
         current = current->prev;
         chunk_delete(dst, current->next);
       }
@@ -116,7 +119,7 @@ void chunk_merge(segment *dst, void *start, size_t size) {
     current = current->next;
   }
   if (!found) {
-    chunk_insert(dst, start);
+    chunk_insert(dst, candidate_start_addr);
   }
 }
 
@@ -125,9 +128,8 @@ void segment_dump(const segment *src, const char *name) {
   if (src->count > 0) {
     segment_node *node = src->head;
     while (node != NULL) {
-      char *item = (char *)node->item;
-      printf("   - meta: %p, start: %p, end: %p, size: %zu\n", item,
-             item + sizeof(chunk), item + sizeof(chunk) + node->item->size,
+      printf("   - meta: %p, start: %p, end: %p, size: %zu\n", node->item,
+             chunk_user_addr(node->item), chunk_end_addr(node->item),
              node->item->size);
       node = node->next;
     }
@@ -141,14 +143,14 @@ void check_pointer(void *ptr, size_t size) {
     assert(ptr == NULL);
   } else {
     assert(ptr != NULL);
-    chunk *meta = (chunk *)(ptr - sizeof(size_t));
+    chunk *meta = pointer_to_chunk(ptr);
     assert(meta->size >= size);
   }
 }
 
 bool check_pointer_freed(void *ptr) {
   if (ptr != NULL) {
-    chunk *meta = (chunk *)(ptr - sizeof(size_t));
+    chunk *meta = pointer_to_chunk(ptr);
     return chunk_find_by_start(&freed, meta) != NULL;
   }
   assert(0 && "unreachable");
@@ -158,50 +160,43 @@ size_t freed_object_count() { return freed.count; }
 
 size_t allocated_object_count() { return alloced.count; }
 
-void *heap_alloc(size_t size) {
-  if (size == 0)
+void *heap_alloc(size_t requested_size) {
+  if (requested_size == 0)
     return NULL;
 
-  size_t csize = size + sizeof(chunk);
-
   chunk *item = NULL;
-  segment_node *node = chunk_find_by_size(&freed, csize);
+  size_t actual_size = requested_size + sizeof(chunk);
+
+  segment_node *node = chunk_find_by_size(&freed, actual_size);
   if (node != NULL) {
     item = node->item;
-    size_t remain = item->size - csize;
-    char *ret = ((char *)item) + sizeof(chunk);
-    item->size = size;
+    size_t remain = item->size - actual_size;
+    item->size = requested_size;
     chunk_insert(&alloced, item);
     if (remain > 0) {
-      char *end = ret + item->size;
-      node->item = (chunk *)end;
+      node->item = (chunk *)chunk_end_addr(item);
       node->item->size = remain;
     } else {
       chunk_delete(&freed, node);
     }
-    return ret;
   } else {
-    assert((heap.size + csize) <= CAPACITY_HEAP_AREA);
-    char *head = heap.area + heap.size;
-    item = (chunk *)head;
-    item->size = size;
-    void *start = head + sizeof(chunk);
-    heap.size += csize;
+    assert((heap.size + actual_size) <= CAPACITY_HEAP_AREA);
+    item = (chunk *)(heap.area + heap.size);
+    item->size = requested_size;
+    heap.size += actual_size;
 
     chunk_insert(&alloced, item);
-
-    return start;
   }
-  return NULL;
+  assert(item != NULL);
+  return chunk_user_addr(item);
 }
 
 void heap_free(void *ptr) {
   if (ptr != NULL) {
-    void *start = (char *)ptr - sizeof(chunk);
-    segment_node *index = chunk_find_by_start(&alloced, start);
+    chunk *item = pointer_to_chunk(ptr);
+    segment_node *index = chunk_find_by_start(&alloced, item);
     assert(index != NULL);
-    chunk *item = index->item;
-    chunk_merge(&freed, start, item->size);
+    chunk_merge(&freed, item, item->size);
     chunk_delete(&alloced, index);
   }
 }
