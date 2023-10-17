@@ -15,10 +15,10 @@ main: clean ## Builds main
 	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/main -DDEBUG=0 main.c heap.c
 	@./${PROJECT_BINARY_OUTPUT}/main
 
-sim: clean ## Builds simulations
+test: clean ## Builds simulations
 	@mkdir -p ${PROJECT_BINARY_OUTPUT}
-	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/sim -DDEBUG=0 sim.c heap.c
-	@./${PROJECT_BINARY_OUTPUT}/sim
+	@$(CC) $(CFLAGS) -o ${PROJECT_BINARY_OUTPUT}/test -DDEBUG=0 test.c heap.c
+	@./${PROJECT_BINARY_OUTPUT}/test
 
 sketch: clean ## Builds sketch
 	@mkdir -p ${PROJECT_BINARY_OUTPUT}

@@ -8,7 +8,7 @@
 #endif
 
 // checks heap allocatin with zero byte
-void simulate_zero_allocation() {
+void test_zero_allocation() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -29,7 +29,7 @@ void simulate_zero_allocation() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_alphabet_allocation() {
+void test_alphabet_allocation() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -59,7 +59,7 @@ void simulate_alphabet_allocation() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_continuous_allocation() {
+void test_continuous_allocation() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -85,7 +85,7 @@ void simulate_continuous_allocation() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_memory_gap() {
+void test_memory_gap() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -115,7 +115,7 @@ void simulate_memory_gap() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_free_space_compaction_by_prev() {
+void test_free_space_compaction_by_prev() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -154,7 +154,7 @@ void simulate_free_space_compaction_by_prev() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_free_space_compaction_by_next() {
+void test_free_space_compaction_by_next() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -193,7 +193,7 @@ void simulate_free_space_compaction_by_next() {
   printf("### Finished: %s\n\n", __func__);
 }
 
-void simulate_free_space_compaction() {
+void test_free_space_compaction() {
 #if DEBUG
   printf("### Starting: %s\n", __func__);
   heap_dump();
@@ -241,13 +241,13 @@ int main(void) {
   size_t freed = freed_object_count();
   size_t alloced = allocated_object_count();
 
-  simulate_zero_allocation();
-  simulate_alphabet_allocation();
-  simulate_continuous_allocation();
-  simulate_memory_gap();
-  simulate_free_space_compaction_by_prev();
-  simulate_free_space_compaction_by_next();
-  simulate_free_space_compaction();
+  test_zero_allocation();
+  test_alphabet_allocation();
+  test_continuous_allocation();
+  test_memory_gap();
+  test_free_space_compaction_by_prev();
+  test_free_space_compaction_by_next();
+  test_free_space_compaction();
 
   // after all simulations/tests;
   // heap zero allocated objects, one freed object
