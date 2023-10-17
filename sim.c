@@ -13,15 +13,19 @@ void simulate_zero_allocation() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   size_t size = 0;
   void *ptr = heap_alloc(size);
   check_pointer(ptr, size);
   // zero byte allocation will not change heap
-  assert(0 == allocated_object_count());
+  assert(alloced == allocated_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(ptr);
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -30,6 +34,8 @@ void simulate_alphabet_allocation() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   size_t size = 26;
   char *alphabet = heap_alloc(size);
   check_pointer(alphabet, size);
@@ -41,12 +47,14 @@ void simulate_alphabet_allocation() {
   for (size_t i = 0; i < size; ++i) {
     assert(alphabet[i] == (char)i + 'A');
   }
+  assert((alloced + 1) == allocated_object_count());
 
 #if DEBUG
   heap_dump();
 #endif
   heap_free(alphabet);
-  assert(0 == allocated_object_count());
+  assert(alloced == allocated_object_count());
+  assert((freed + 1) == freed_object_count());
   alphabet = NULL;
   printf("### Finished: %s\n\n", __func__);
 }
@@ -56,11 +64,15 @@ void simulate_continuous_allocation() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   char *ptrs[10] = {0};
   for (size_t i = 0; i < 10; ++i) {
     ptrs[i] = heap_alloc(i);
     check_pointer(ptrs[i], i);
   }
+  assert((9 + alloced) == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
@@ -68,7 +80,8 @@ void simulate_continuous_allocation() {
     heap_free(ptrs[i]);
     ptrs[i] = NULL;
   }
-  assert(0 == allocated_object_count());
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -77,6 +90,8 @@ void simulate_memory_gap() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   char *ptrs[10] = {0};
   for (size_t i = 0; i < 10; ++i) {
     ptrs[i] = heap_alloc(i);
@@ -86,6 +101,8 @@ void simulate_memory_gap() {
       ptrs[i] = NULL;
     }
   }
+  assert((5 + alloced) == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
@@ -93,6 +110,8 @@ void simulate_memory_gap() {
     heap_free(ptrs[i]);
     ptrs[i] = NULL;
   }
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
   printf("### Finished: %s\n\n", __func__);
 }
 
@@ -101,22 +120,32 @@ void simulate_free_space_compaction_by_prev() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   size_t size = 10;
   void *p0 = heap_alloc(size);
   check_pointer(p0, size);
+  assert(1 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   void *p1 = heap_alloc(10);
   check_pointer(p1, size);
+  assert(2 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(p0);
+  assert(1 + alloced == allocated_object_count());
+  assert(1 + freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(p1);
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
@@ -130,22 +159,32 @@ void simulate_free_space_compaction_by_next() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   size_t size = 10;
   void *p0 = heap_alloc(size);
   check_pointer(p0, size);
+  assert(1 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   void *p1 = heap_alloc(10);
   check_pointer(p0, size);
+  assert(2 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(p1);
+  assert(1 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(p0);
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
@@ -159,11 +198,15 @@ void simulate_free_space_compaction() {
   printf("### Starting: %s\n", __func__);
   heap_dump();
 #endif
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
   char *ptrs[10] = {0};
   for (size_t i = 0; i < 10; ++i) {
     ptrs[i] = heap_alloc(i);
     check_pointer(ptrs[i], i);
   }
+  assert(9 + alloced == allocated_object_count());
+  assert(freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
@@ -173,10 +216,14 @@ void simulate_free_space_compaction() {
       ptrs[i] = NULL;
     }
   }
+  assert(5 + alloced == allocated_object_count());
+  assert(4 + freed == freed_object_count());
 #if DEBUG
   heap_dump();
 #endif
   heap_free(ptrs[3]);
+  assert(4 + alloced == allocated_object_count());
+  assert(3 + freed == freed_object_count());
   ptrs[3] = NULL;
 #if DEBUG
   heap_dump();
@@ -185,10 +232,15 @@ void simulate_free_space_compaction() {
     heap_free(ptrs[i]);
     ptrs[i] = NULL;
   }
+  assert(alloced == allocated_object_count());
+  assert(freed == freed_object_count());
   printf("### Finished: %s\n\n", __func__);
 }
 
 int main(void) {
+  size_t freed = freed_object_count();
+  size_t alloced = allocated_object_count();
+
   simulate_zero_allocation();
   simulate_alphabet_allocation();
   simulate_continuous_allocation();
@@ -199,8 +251,8 @@ int main(void) {
 
   // after all simulations/tests;
   // heap zero allocated objects, one freed object
-  // assert(0 == allocated_object_count());
-  // assert(1 == freed_object_count());
+  assert(alloced == allocated_object_count());
+  assert(1 + freed == freed_object_count());
 
   return 0;
 }
